@@ -1,0 +1,30 @@
+{
+  "name": "melvinos",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@fontsource-variable/familjen-grotesk": "^5.2.0",
+    "@fontsource-variable/newsreader": "^5.2.0",
+    "@fontsource/ibm-plex-mono": "^5.2.0",
+    "framer-motion": "^12.23.0",
+    "lucide-react": "^0.556.0",
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0",
+    "react-markdown": "^10.1.0",
+    "react-rnd": "^10.5.2",
+    "remark-gfm": "^4.0.1",
+    "zustand": "^5.0.3"
+  },
+  "devDependencies": {
+    "@tailwindcss/vite": "^4.1.17",
+    "@vitejs/plugin-react": "^5.0.0",
+    "tailwindcss": "^4.1.17",
+    "vite": "^7.0.0"
+  }
+}
