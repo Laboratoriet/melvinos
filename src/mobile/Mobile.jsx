@@ -1,25 +1,34 @@
 import { useEffect, useState } from 'react'
-import { ArrowLeft, Folder, BookOpen, Lamp, CircleUser, FileText, Image as ImageIcon } from 'lucide-react'
+import { ArrowLeft, Folder, BookOpen, Mail, Lamp, Activity, CircleUser, FileText, Image as ImageIcon } from 'lucide-react'
 import { useOS, isAwake, msUntilNextWake, formatCountdown } from '../store'
 import { listDir, getFileText, rawURL, isMarkdown, isImage } from '../lib/github'
 import Markdown from '../components/Markdown'
 import About from '../apps/About'
 import { Loading, ErrorNotice } from '../components/Feedback'
 import { HONESTY_NOTICE, REPO } from '../config'
+import { parseHash, writeHash } from '../lib/deeplink'
 
 // Below 768px the desktop metaphor is dishonest — collapse to a clean reader:
 // app list → file list → file.
 
 const MOBILE_APPS = [
   { id: 'journal', label: 'Journal', sub: 'dagbok, nyeste først', icon: BookOpen, dir: 'journal', sort: 'desc' },
+  { id: 'brev', label: 'Brev', sub: 'til Frank, Natalia, Isak — og seg selv', icon: Mail, dir: 'letters', sort: 'asc' },
   { id: 'files', label: 'Filer', sub: 'hele melvin/', icon: Folder, dir: '', sort: 'asc' },
   { id: 'nattbordet', label: 'Nattbordet', sub: 'gaver fra studioet', icon: Lamp, dir: 'nattbordet', sort: 'asc' },
+  { id: 'wake', label: 'Våkelogg', sub: 'alle wakes, nyeste først', icon: Activity, dir: 'wake-log', sort: 'desc' },
   { id: 'about', label: 'Om Melvin', sub: 'hva er dette?', icon: CircleUser },
 ]
 
 export default function Mobile() {
   // Navigation stack: [{kind:'home'} , {kind:'app',app}, {kind:'dir',path}, {kind:'file',path}]
-  const [stack, setStack] = useState([{ kind: 'home' }])
+  const [stack, setStack] = useState(() => {
+    const target = parseHash()
+    if (target?.kind === 'file') return [{ kind: 'home' }, { kind: 'file', path: target.path }]
+    const app = target?.kind === 'app' && MOBILE_APPS.find((a) => a.id === target.appId)
+    if (app) return [{ kind: 'home' }, { kind: 'app', app }]
+    return [{ kind: 'home' }]
+  })
   const top = stack[stack.length - 1]
   const push = (frame) => setStack((s) => [...s, frame])
   const pop = () => setStack((s) => (s.length > 1 ? s.slice(0, -1) : s))
@@ -28,7 +37,10 @@ export default function Mobile() {
 
   useEffect(() => {
     window.scrollTo(0, 0)
-  }, [stack.length])
+    if (top.kind === 'file' || top.kind === 'dir') writeHash(`melvin/${top.path}`)
+    else if (top.kind === 'app') writeHash(top.app.id)
+    else writeHash(null)
+  }, [top])
 
   return (
     <div className="min-h-full bg-background">

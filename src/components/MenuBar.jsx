@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { Search } from 'lucide-react'
 import { useOS, isAwake, msUntilNextWake, formatCountdown } from '../store'
 
 const osloClock = new Intl.DateTimeFormat('nb-NO', {
@@ -47,6 +48,16 @@ export default function MenuBar() {
           <span className="truncate italic">“{latest.message.split('\n')[0]}”</span>
         </span>
       )}
+
+      <button
+        type="button"
+        onClick={() => useOS.getState().setSearchOpen(true)}
+        aria-label="Søk (Cmd+K)"
+        title="Søk — ⌘K"
+        className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md text-muted hover:bg-surface-2 hover:text-ink focus-visible:outline-2 focus-visible:outline-accent"
+      >
+        <Search size={14} strokeWidth={1.75} />
+      </button>
 
       <time className="shrink-0 font-medium tabular-nums text-ink-soft">
         {osloClock.format(now)}

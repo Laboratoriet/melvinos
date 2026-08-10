@@ -8,11 +8,15 @@ const About = lazy(() => import('./About'))
 const Terminal = lazy(() => import('./Terminal'))
 const Trash = lazy(() => import('./Trash'))
 const Reader = lazy(() => import('./Reader'))
+const Brev = lazy(() => import('./Brev'))
+const WakeMonitor = lazy(() => import('./WakeMonitor'))
 
 // Window title bars use the real repo path — the file system is the truth.
 export const APPS = {
   files: { comp: Files, label: 'Filer', title: 'melvin/', w: 920, h: 590 },
   journal: { comp: Journal, label: 'Journal', title: 'melvin/journal/', w: 880, h: 640 },
+  brev: { comp: Brev, label: 'Brev', title: 'melvin/letters/', w: 820, h: 600 },
+  wake: { comp: WakeMonitor, label: 'Våkelogg', title: 'melvin/wake-log/', w: 760, h: 520 },
   nattbordet: { comp: Nattbordet, label: 'Nattbordet', title: 'melvin/nattbordet/', w: 560, h: 560 },
   about: { comp: About, label: 'Om Melvin', title: 'om melvin', w: 680, h: 660 },
   terminal: { comp: Terminal, label: 'Terminal', title: 'melvinos — terminal (read-only)', w: 680, h: 420 },

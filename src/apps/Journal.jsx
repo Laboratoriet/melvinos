@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { listDir, getFileText } from '../lib/github'
 import Markdown from '../components/Markdown'
 import { Loading, ErrorNotice } from '../components/Feedback'
+import { setJournalHash, writeHash } from '../lib/deeplink'
 
 const fmtDate = new Intl.DateTimeFormat('nb-NO', {
   timeZone: 'Europe/Oslo',
@@ -16,7 +17,7 @@ function prettyDate(name) {
 }
 
 /** The flagship app: Melvin's journal, newest first, typography first. */
-export default function Journal() {
+export default function Journal({ initialPath }) {
   const [entries, setEntries] = useState(null)
   const [listError, setListError] = useState(null)
   const [selected, setSelected] = useState(null)
@@ -30,15 +31,18 @@ export default function Journal() {
           .filter((i) => i.type === 'file' && i.name.endsWith('.md'))
           .sort((a, b) => b.name.localeCompare(a.name)) // newest first
         setEntries(files)
-        if (files.length) setSelected(files[0])
+        const wanted = initialPath && files.find((f) => f.path === initialPath)
+        if (files.length) setSelected(wanted || files[0])
       })
       .catch(setListError)
-  }, [])
+  }, [initialPath])
 
   useEffect(() => {
     if (!selected) return
     setText(null)
     setTextError(null)
+    setJournalHash(selected.path)
+    writeHash(`melvin/${selected.path}`)
     getFileText(selected.path).then(setText).catch(setTextError)
   }, [selected])
 

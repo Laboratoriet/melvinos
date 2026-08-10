@@ -1,17 +1,19 @@
-import { Folder, BookOpen, Lamp, CircleUser, SquareTerminal, Trash2 } from 'lucide-react'
+import { Folder, BookOpen, Mail, Lamp, Activity, CircleUser, SquareTerminal, Trash2 } from 'lucide-react'
 import { useOS } from '../store'
 import { APPS } from '../apps'
 
 const ICONS = {
   files: Folder,
   journal: BookOpen,
+  brev: Mail,
   nattbordet: Lamp,
+  wake: Activity,
   about: CircleUser,
   terminal: SquareTerminal,
   trash: Trash2,
 }
 
-const ORDER = ['files', 'journal', 'nattbordet', 'about', 'terminal']
+const ORDER = ['files', 'journal', 'brev', 'nattbordet', 'wake', 'about', 'terminal']
 
 function DockButton({ appId }) {
   const open = useOS((s) => s.open)

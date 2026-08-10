@@ -8,7 +8,10 @@ import MenuBar from './components/MenuBar'
 import Dock from './components/Dock'
 import Window from './components/Window'
 import ContextMenu from './components/ContextMenu'
+import SearchOverlay from './components/SearchOverlay'
 import { Loading } from './components/Feedback'
+import { parseHash } from './lib/deeplink'
+import { openReader } from './apps'
 
 const Mobile = lazy(() => import('./mobile/Mobile'))
 
@@ -50,16 +53,43 @@ function Desktop() {
   const reduced = useReducedMotion()
   const topZ = Math.max(0, ...windows.map((w) => w.z))
 
-  // First visit lands on the journal — that's what people come for
+  // First visit: honor a deep link (#melvin/journal/....md or #terminal),
+  // otherwise land on the journal — that's what people come for.
   useEffect(() => {
     if (!booted) return
     const t = setTimeout(() => {
-      if (useOS.getState().windows.length === 0) {
+      if (useOS.getState().windows.length > 0) return
+      const target = parseHash()
+      if (target?.kind === 'app' && APPS[target.appId]) {
+        const app = APPS[target.appId]
+        open(target.appId, { title: app.title, w: app.w, h: app.h })
+      } else if (target?.kind === 'file' && target.path.startsWith('journal/')) {
+        open('journal', {
+          title: APPS.journal.title,
+          w: APPS.journal.w,
+          h: APPS.journal.h,
+          props: { initialPath: target.path },
+        })
+      } else if (target?.kind === 'file') {
+        openReader(open, target.path)
+      } else {
         open('journal', { title: APPS.journal.title, w: APPS.journal.w, h: APPS.journal.h })
       }
     }, 350)
     return () => clearTimeout(t)
   }, [booted, open])
+
+  // Cmd+K / Ctrl+K opens search
+  useEffect(() => {
+    function onKey(e) {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
+        e.preventDefault()
+        useOS.getState().setSearchOpen(!useOS.getState().searchOpen)
+      }
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [])
 
   return (
     <div className="relative h-full overflow-hidden">
@@ -85,6 +115,7 @@ function Desktop() {
             )
           })}
           <Dock />
+          <SearchOverlay />
           <ContextMenu containerRef={desktopRef} />
         </main>
       </motion.div>

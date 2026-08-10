@@ -1,5 +1,6 @@
 import { create } from 'zustand'
 import { getCommits } from './lib/github'
+import { hashForWindow, writeHash } from './lib/deeplink'
 import { WAKE } from './config'
 
 let nextId = 1
@@ -16,7 +17,17 @@ export const useOS = create((set, get) => ({
   /** Open (or focus) a window. `key` dedupes — same key focuses the existing window. */
   open(appId, { key = appId, title, props = {}, w = 900, h = 600 } = {}) {
     const existing = get().windows.find((win) => win.key === key)
-    if (existing) return get().focus(existing.id)
+    if (existing) {
+      if (Object.keys(props).length) {
+        set((s) => ({
+          windows: s.windows.map((w) =>
+            w.id === existing.id ? { ...w, props: { ...w.props, ...props } } : w
+          ),
+        }))
+      }
+      return get().focus(existing.id)
+    }
+    writeHash(hashForWindow({ appId, props }))
     const n = get().windows.length
     const vw = window.innerWidth
     const vh = window.innerHeight
@@ -34,12 +45,16 @@ export const useOS = create((set, get) => ({
 
   close(id) {
     set((s) => ({ windows: s.windows.filter((w) => w.id !== id) }))
+    const remaining = get().windows
+    const top = remaining.reduce((a, b) => (!a || b.z > a.z ? b : a), null)
+    writeHash(hashForWindow(top))
   },
 
   focus(id) {
     set((s) => ({
       windows: s.windows.map((w) => (w.id === id ? { ...w, z: nextZ++ } : w)),
     }))
+    writeHash(hashForWindow(get().windows.find((w) => w.id === id)))
   },
 
   moveResize(id, patch) {
@@ -47,6 +62,9 @@ export const useOS = create((set, get) => ({
       windows: s.windows.map((w) => (w.id === id ? { ...w, ...patch } : w)),
     }))
   },
+
+  searchOpen: false,
+  setSearchOpen: (searchOpen) => set({ searchOpen }),
 
   // ---- Melvin's pulse: recent commits drive status dot, ticker, terminal ----
   commits: null,

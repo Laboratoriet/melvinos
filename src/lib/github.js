@@ -135,5 +135,38 @@ export async function arrivalDate(path) {
   return commits.length ? commits[commits.length - 1].date : null
 }
 
+/** Every file under melvin/ in one API call (git trees, recursive). Powers search. */
+export function getTree() {
+  return cached('tree', async () => {
+    const data = await apiJSON(`${API_BASE}/git/trees/${REPO.branch}?recursive=1`)
+    return data.tree
+      .filter((n) => n.type === 'blob' && n.path.startsWith(`${REPO.root}/`))
+      .map((n) => ({ path: n.path.slice(REPO.root.length + 1), size: n.size }))
+  })
+}
+
+/** Search the texts of files already read this session (sessionStorage cache). */
+export function searchCachedTexts(query) {
+  const q = query.toLowerCase()
+  const hits = []
+  try {
+    for (let i = 0; i < sessionStorage.length; i++) {
+      const key = sessionStorage.key(i)
+      if (!key?.startsWith('melvinos:file:')) continue
+      const path = key.slice('melvinos:file:'.length)
+      const text = JSON.parse(sessionStorage.getItem(key))?.data
+      if (typeof text !== 'string') continue
+      const idx = text.toLowerCase().indexOf(q)
+      if (idx === -1) continue
+      const start = Math.max(0, idx - 40)
+      const snippet = (start > 0 ? '…' : '') + text.slice(start, idx + q.length + 60).replace(/\s+/g, ' ') + '…'
+      hits.push({ path, snippet })
+    }
+  } catch {
+    /* sessionStorage unavailable — filename search still works */
+  }
+  return hits
+}
+
 export const isMarkdown = (name) => /\.(md|markdown)$/i.test(name)
 export const isImage = (name) => /\.(png|jpe?g|gif|webp|svg|avif)$/i.test(name)

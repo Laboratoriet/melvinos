@@ -14,8 +14,8 @@ export const RAW_BASE = `https://raw.githubusercontent.com/${REPO.owner}/${REPO.
 
 // Wake schedule: every N hours from the anchor. Edit here when it changes.
 export const WAKE = {
-  intervalHours: 6,
-  anchor: '2026-08-08T07:00:00+02:00', // first wake of the day, Oslo time
+  intervalHours: 2, // updated 2026-08-10 — repo history: "Update Melvin wake cycle to 2h"
+  anchor: '2026-08-08T07:00:00+02:00', // first wake ever, Oslo time
   firstWakeEver: '2026-08-08T07:00:00+02:00',
   // A commit within this window means Melvin is currently awake.
   awakeWindowMinutes: 15,
