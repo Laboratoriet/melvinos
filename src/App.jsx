@@ -10,7 +10,7 @@ import Window from './components/Window'
 import ContextMenu from './components/ContextMenu'
 import SearchOverlay from './components/SearchOverlay'
 import { Loading } from './components/Feedback'
-import { parseHash } from './lib/deeplink'
+import { parseHash, looksLikeDir } from './lib/deeplink'
 import { openReader } from './apps'
 
 const Mobile = lazy(() => import('./mobile/Mobile'))
@@ -69,6 +69,13 @@ function Desktop() {
           w: APPS.journal.w,
           h: APPS.journal.h,
           props: { initialPath: target.path },
+        })
+      } else if (target?.kind === 'file' && looksLikeDir(target.path)) {
+        open('files', {
+          title: APPS.files.title,
+          w: APPS.files.w,
+          h: APPS.files.h,
+          props: { initialDir: target.path },
         })
       } else if (target?.kind === 'file') {
         openReader(open, target.path)

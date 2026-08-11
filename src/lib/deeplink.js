@@ -30,5 +30,9 @@ export function hashForWindow(win) {
   if (!win) return null
   if (win.appId === 'reader') return `melvin/${win.props.path}`
   if (win.appId === 'journal') return journalHash
+  if (win.appId === 'files' && win.props?.initialDir) return `melvin/${win.props.initialDir}`
   return win.appId
 }
+
+/** No file extension → treat a deep-linked path as a directory. */
+export const looksLikeDir = (path) => !/\.[a-z0-9]+$/i.test(path)

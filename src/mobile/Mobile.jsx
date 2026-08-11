@@ -6,7 +6,7 @@ import Markdown from '../components/Markdown'
 import About from '../apps/About'
 import { Loading, ErrorNotice } from '../components/Feedback'
 import { HONESTY_NOTICE, REPO } from '../config'
-import { parseHash, writeHash } from '../lib/deeplink'
+import { parseHash, writeHash, looksLikeDir } from '../lib/deeplink'
 
 // Below 768px the desktop metaphor is dishonest — collapse to a clean reader:
 // app list → file list → file.
@@ -24,7 +24,13 @@ export default function Mobile() {
   // Navigation stack: [{kind:'home'} , {kind:'app',app}, {kind:'dir',path}, {kind:'file',path}]
   const [stack, setStack] = useState(() => {
     const target = parseHash()
-    if (target?.kind === 'file') return [{ kind: 'home' }, { kind: 'file', path: target.path }]
+    if (target?.kind === 'file')
+      return [
+        { kind: 'home' },
+        looksLikeDir(target.path)
+          ? { kind: 'dir', path: target.path }
+          : { kind: 'file', path: target.path },
+      ]
     const app = target?.kind === 'app' && MOBILE_APPS.find((a) => a.id === target.appId)
     if (app) return [{ kind: 'home' }, { kind: 'app', app }]
     return [{ kind: 'home' }]

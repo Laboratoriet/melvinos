@@ -1,9 +1,9 @@
 import { useEffect, useState } from 'react'
-import { Lamp } from 'lucide-react'
+import { Lamp, Folder } from 'lucide-react'
 import { listDir, arrivalDate, rawURL, isImage } from '../lib/github'
 import { useOS } from '../store'
 import { Loading, ErrorNotice } from '../components/Feedback'
-import { openReader } from './index'
+import { openReader, APPS } from './index'
 
 const fmtArrival = new Intl.DateTimeFormat('nb-NO', {
   timeZone: 'Europe/Oslo',
@@ -22,7 +22,8 @@ export default function Nattbordet() {
   useEffect(() => {
     listDir('nattbordet')
       .then((list) => {
-        const files = list.filter((i) => i.type === 'file')
+        // Gifts can be single files or whole folders
+        const files = list.filter((i) => i.type === 'file' || i.type === 'dir')
         setItems(files)
         // Arrival dates from git history, one lazy lookup per gift
         files.forEach((f) =>
@@ -58,10 +59,23 @@ export default function Nattbordet() {
               <li key={item.path}>
                 <button
                   type="button"
-                  onClick={() => openReader(open, item.path)}
+                  onClick={() =>
+                    item.type === 'dir'
+                      ? open('files', {
+                          title: APPS.files.title,
+                          w: APPS.files.w,
+                          h: APPS.files.h,
+                          props: { initialDir: item.path },
+                        })
+                      : openReader(open, item.path)
+                  }
                   className="flex w-full items-center gap-4 rounded-xl border border-accent-soft bg-surface p-4 text-left shadow-[0_2px_12px_-6px_rgba(176,111,36,0.25)] transition-colors duration-150 hover:border-accent-bright focus-visible:outline-2 focus-visible:outline-accent"
                 >
-                  {isImage(item.name) ? (
+                  {item.type === 'dir' ? (
+                    <span className="flex h-14 w-14 shrink-0 items-center justify-center rounded-lg bg-accent-soft">
+                      <Folder size={22} strokeWidth={1.5} className="text-accent" />
+                    </span>
+                  ) : isImage(item.name) ? (
                     <img
                       src={rawURL(item.path)}
                       alt=""
@@ -74,7 +88,10 @@ export default function Nattbordet() {
                     </span>
                   )}
                   <span className="min-w-0">
-                    <span className="block truncate font-medium">{item.name}</span>
+                    <span className="block truncate font-medium">
+                      {item.name}
+                      {item.type === 'dir' && '/'}
+                    </span>
                     <span className="block text-[12.5px] text-muted">
                       {arrivals[item.path]
                         ? `ankom ${fmtArrival.format(new Date(arrivals[item.path]))}`

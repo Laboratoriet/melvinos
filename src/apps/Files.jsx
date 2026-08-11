@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Folder, FileText, Image, LayoutGrid, List } from 'lucide-react'
+import { Folder, FileText, Image, LayoutGrid, List, CornerLeftUp } from 'lucide-react'
 import { listDir, isImage } from '../lib/github'
 import { useOS } from '../store'
 import { Loading, ErrorNotice } from '../components/Feedback'
@@ -14,11 +14,13 @@ function ItemIcon({ item, size = 16 }) {
 const fmtSize = (b) =>
   b >= 1024 * 1024 ? `${(b / 1024 / 1024).toFixed(1)} MB` : b >= 1024 ? `${Math.round(b / 1024)} kB` : `${b} B`
 
-export default function Files() {
+export default function Files({ initialDir = '' }) {
   const open = useOS((s) => s.open)
   const [root, setRoot] = useState(null)
   const [rootError, setRootError] = useState(null)
-  const [selected, setSelected] = useState('') // '' = melvin/ root
+  const [selected, setSelected] = useState(initialDir) // '' = melvin/ root
+
+  useEffect(() => setSelected(initialDir), [initialDir])
   const [items, setItems] = useState(null)
   const [itemsError, setItemsError] = useState(null)
   const [view, setView] = useState('list')
@@ -94,8 +96,20 @@ export default function Files() {
       {/* Main pane */}
       <div className="flex min-w-0 flex-1 flex-col">
         <div className="flex h-9 shrink-0 items-center justify-between border-b border-border px-3">
-          <span className="font-mono text-[11.5px] text-muted">
-            melvin/{selected ? `${selected}/` : ''}
+          <span className="flex min-w-0 items-center gap-1.5">
+            {selected && (
+              <button
+                type="button"
+                onClick={() => setSelected(selected.includes('/') ? selected.slice(0, selected.lastIndexOf('/')) : '')}
+                aria-label="Opp ett nivå"
+                className="rounded-md p-1 text-muted hover:text-ink focus-visible:outline-2 focus-visible:outline-accent"
+              >
+                <CornerLeftUp size={13} strokeWidth={1.75} />
+              </button>
+            )}
+            <span className="truncate font-mono text-[11.5px] text-muted">
+              melvin/{selected ? `${selected}/` : ''}
+            </span>
           </span>
           <div className="flex gap-0.5">
             <ViewToggle active={view === 'list'} onClick={() => setView('list')} label="Listevisning">
