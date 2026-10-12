@@ -1,18 +1,22 @@
 import { useEffect, useState } from 'react'
-import { getFileText, rawURL, isMarkdown, isImage } from '../lib/github'
+import { getFileText, rawURL, isMarkdown, isImage, mediaKind } from '../lib/github'
 import Markdown from '../components/Markdown'
+import MediaView from '../components/MediaView'
 import { Loading, ErrorNotice } from '../components/Feedback'
 
-/** Opens any file from melvin/ — markdown gets typography, images get a frame, rest gets mono. */
+/** Opens any file from melvin/ — markdown gets typography, images get a frame, media plays, rest gets mono. */
 export default function Reader({ path }) {
   const [text, setText] = useState(null)
   const [error, setError] = useState(null)
   const image = isImage(path)
+  const media = mediaKind(path)
 
   useEffect(() => {
-    if (image) return
+    if (image || media) return
     getFileText(path).then(setText).catch(setError)
-  }, [path, image])
+  }, [path, image, media])
+
+  if (media) return <MediaView path={path} kind={media} />
 
   if (image) {
     return (

@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react'
-import { ArrowLeft, Folder, BookOpen, Mail, Lamp, Activity, CircleUser, FileText, Image as ImageIcon } from 'lucide-react'
+import { ArrowLeft, Folder, BookOpen, Mail, Lamp, Activity, CircleUser, FileText, Image as ImageIcon, Music, Film, AppWindow } from 'lucide-react'
 import { useOS, isAwake, msUntilNextWake, formatCountdown } from '../store'
-import { listDir, getFileText, rawURL, isMarkdown, isImage } from '../lib/github'
+import { listDir, getFileText, rawURL, isMarkdown, isImage, mediaKind } from '../lib/github'
 import Markdown from '../components/Markdown'
+import MediaView from '../components/MediaView'
 import About from '../apps/About'
 import { Loading, ErrorNotice } from '../components/Feedback'
 import { HONESTY_NOTICE, REPO } from '../config'
@@ -19,6 +20,8 @@ const MOBILE_APPS = [
   { id: 'wake', label: 'Våkelogg', sub: 'alle wakes, nyeste først', icon: Activity, dir: 'wake-log', sort: 'desc' },
   { id: 'about', label: 'Om Melvin', sub: 'hva er dette?', icon: CircleUser },
 ]
+
+const MEDIA_ICONS = { audio: Music, video: Film, html: AppWindow }
 
 export default function Mobile() {
   // Navigation stack: [{kind:'home'} , {kind:'app',app}, {kind:'dir',path}, {kind:'file',path}]
@@ -132,7 +135,12 @@ function DirList({ path, sort, push }) {
   return (
     <ul className="divide-y divide-border">
       {items.map((item) => {
-        const Icon = item.type === 'dir' ? Folder : isImage(item.name) ? ImageIcon : FileText
+        const Icon =
+          item.type === 'dir'
+            ? Folder
+            : isImage(item.name)
+              ? ImageIcon
+              : (MEDIA_ICONS[mediaKind(item.name)] ?? FileText)
         return (
           <li key={item.path}>
             <button
@@ -163,11 +171,20 @@ function FileView({ path }) {
   const [text, setText] = useState(null)
   const [error, setError] = useState(null)
   const image = isImage(path)
+  const media = mediaKind(path)
 
   useEffect(() => {
-    if (image) return
+    if (image || media) return
     getFileText(path).then(setText).catch(setError)
-  }, [path, image])
+  }, [path, image, media])
+
+  if (media) {
+    return (
+      <div className="h-[75vh]">
+        <MediaView path={path} kind={media} />
+      </div>
+    )
+  }
 
   if (image) {
     return (

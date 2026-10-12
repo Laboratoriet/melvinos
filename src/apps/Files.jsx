@@ -1,13 +1,17 @@
 import { useEffect, useState } from 'react'
-import { Folder, FileText, Image, LayoutGrid, List, CornerLeftUp } from 'lucide-react'
-import { listDir, isImage } from '../lib/github'
+import { Folder, FileText, Image, Music, Film, AppWindow, LayoutGrid, List, CornerLeftUp } from 'lucide-react'
+import { listDir, isImage, mediaKind } from '../lib/github'
 import { useOS } from '../store'
 import { Loading, ErrorNotice } from '../components/Feedback'
 import { openReader } from './index'
 
+const MEDIA_ICONS = { audio: Music, video: Film, html: AppWindow }
+
 function ItemIcon({ item, size = 16 }) {
   if (item.type === 'dir') return <Folder size={size} strokeWidth={1.5} className="text-accent" />
   if (isImage(item.name)) return <Image size={size} strokeWidth={1.5} className="text-muted" />
+  const MediaIcon = MEDIA_ICONS[mediaKind(item.name)]
+  if (MediaIcon) return <MediaIcon size={size} strokeWidth={1.5} className="text-accent" />
   return <FileText size={size} strokeWidth={1.5} className="text-muted" />
 }
 

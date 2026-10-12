@@ -170,3 +170,13 @@ export function searchCachedTexts(query) {
 
 export const isMarkdown = (name) => /\.(md|markdown)$/i.test(name)
 export const isImage = (name) => /\.(png|jpe?g|gif|webp|svg|avif)$/i.test(name)
+
+/** Files that should be played, run or downloaded rather than read as text. */
+export function mediaKind(name) {
+  if (/\.(wav|mp3|ogg|oga|m4a|aac|flac|opus)$/i.test(name)) return 'audio'
+  if (/\.(mp4|webm|mov|m4v)$/i.test(name)) return 'video'
+  if (/\.html?$/i.test(name)) return 'html'
+  if (/\.pdf$/i.test(name)) return 'pdf'
+  if (/\.(zip|gz|tgz|pyc|bin|npy|npz|mid|midi|glb|gltf|stl|ttf|otf|woff2?)$/i.test(name)) return 'binary'
+  return null
+}
