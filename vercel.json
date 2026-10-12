@@ -1,0 +1,3 @@
+{
+  "rewrites": [{ "source": "/stemme", "destination": "/stemme/index.html" }]
+}

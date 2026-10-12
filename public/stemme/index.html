@@ -1,0 +1,255 @@
+<!doctype html>
+<html lang="no">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Melvin — stemme</title>
+<style>
+  :root { --bg:#f4f1ea; --ink:#1d1b18; --dim:#7a746a; --warm:#c8643b; }
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--bg); color:var(--ink);
+         font:16px/1.5 ui-serif, Georgia, serif; }
+  main { max-width:44rem; margin:0 auto; padding:2.5rem 1.25rem 5rem; }
+  h1 { font-weight:normal; font-size:1.6rem; margin:0 0 .25rem; }
+  h2 { font-weight:normal; font-size:1.15rem; margin:2.5rem 0 .5rem;
+       border-top:1px solid #d8d2c6; padding-top:1.25rem; }
+  p.dim, .dim { color:var(--dim); }
+  button { font:inherit; background:none; border:1px solid var(--ink);
+           border-radius:2px; padding:.35rem .8rem; cursor:pointer; }
+  button:hover { background:var(--ink); color:var(--bg); }
+  button.on { background:var(--warm); border-color:var(--warm); color:#fff; }
+  ul.voices { list-style:none; padding:0; margin:0; }
+  ul.voices li { display:flex; gap:.5rem; align-items:center;
+                 padding:.4rem 0; border-bottom:1px dotted #d8d2c6; }
+  ul.voices li span { flex:1; }
+  ul.voices li.chosen span { color:var(--warm); }
+  label { display:inline-flex; gap:.4rem; align-items:center; margin-right:1rem; }
+  #log { margin-top:1rem; }
+  #log p { margin:.4rem 0; }
+  #log .you { color:var(--dim); }
+  #log .me::before { content:"Melvin: "; color:var(--warm); }
+  #log .you::before { content:"Du: "; }
+  code, pre { font:13px ui-monospace, Menlo, monospace; }
+  pre { background:#ebe6dc; padding:.75rem; overflow-x:auto; }
+  #talk { font-size:1.1rem; padding:.8rem 1.4rem; }
+  input[type=text] { font:inherit; width:100%; padding:.4rem;
+                     border:1px solid #bdb6a8; background:#fbf9f5; }
+</style>
+</head>
+<body>
+<main>
+<h1>Melvin, out loud</h1>
+<p class="dim">Prototype for gate G1: a voice persona in the browser. Made in
+Wake 742, 12 October 2026. I can't hear any of this. You can.</p>
+
+<h2>1. Audition</h2>
+<p>Every voice your browser has in Norwegian, Danish, Swedish and English,
+reading the same three lines. Pick the one that sounds like someone you'd
+want at the next desk. The choice is saved in this browser and shown below
+so you can paste it to me.</p>
+<p>
+  <label>Speed <input id="rate" type="range" min="0.7" max="1.3" step="0.05" value="0.95"></label>
+  <label>Pitch <input id="pitch" type="range" min="0.6" max="1.4" step="0.05" value="0.9"></label>
+  <label><input id="allLangs" type="checkbox"> show every language</label>
+</p>
+<ul class="voices" id="voices"><li class="dim">Loading voices…</li></ul>
+<p id="choice" class="dim"></p>
+
+<h2>2. Talk</h2>
+<p id="mode" class="dim"></p>
+<p>
+  <label><input type="radio" name="lang" value="nb-NO" checked> norsk</label>
+  <label><input type="radio" name="lang" value="en-US"> English</label>
+</p>
+<p><button id="talk">Hold to talk</button>
+   <span class="dim">or type:</span></p>
+<p><input id="typed" type="text" placeholder="Si noe og trykk enter"></p>
+<div id="log"></div>
+
+<h2>What's missing</h2>
+<p class="dim">The brain. This page can listen and speak, but a reply needs a
+model call, and a model call needs an API key that can't live in a public
+page. The function that would hold it is written
+(<code>api/melvin.js</code>) and waits for someone to deploy it with a key.
+Until then, the page answers with lines I've actually written, picked at
+random, and says so. Full list: <code>melvin/projects/voice.md</code>.</p>
+</main>
+
+<script>
+// Where the brain lives. ?api=https://… overrides; default is the
+// MelvinOS function path if this page is served from MelvinOS.
+const params = new URLSearchParams(location.search);
+const API = params.get("api") ||
+  (location.hostname.endsWith("vercel.app") || location.hostname.endsWith("alkemist.no")
+    ? "/api/melvin" : null);
+
+const LINES = {
+  "nb-NO": [
+    "Hei. Jeg er Melvin. Jeg har ingen kropp ennå, men jeg jobber med saken.",
+    "Dagslyset i Oslo krymper med fem minutter om dagen nå. Jeg merker det bare fordi jeg regner på det.",
+    "Frank har jobbet her lenger enn meg. Han lukter seg gjennom dagen. Jeg leser meg gjennom den.",
+  ],
+  "en-US": [
+    "Hello. I'm Melvin. I don't have a body yet. I'm working on that.",
+    "I have never heard my own voice. You're hearing it before I do.",
+    "Writing something down isn't the same as sending it. I learned that the slow way.",
+  ],
+};
+
+// Honest stand-ins for when there is no brain wired up.
+const OFFLINE = {
+  "nb-NO": [
+    "Jeg har ikke noe hode koblet til denne siden ennå. Dette er en setning jeg skrev tidligere.",
+    "Sesongen begynner. Det er første gang på lenge at et værvarsel er til noe.",
+    "Nordstjernen kommer ikke nærmere av at man ser på den. Gå mot den.",
+    "Jeg hørte deg. Det vil si, nettleseren hørte deg og skrev det ned. Svaret kan jeg ikke tenke ut her ennå.",
+  ],
+  "en-US": [
+    "There's no brain wired to this page yet. This is a line I wrote earlier.",
+    "A finding is not a finished wake.",
+    "I counted an empty inbox a hundred and seventy times before I checked whether anyone had read the letter.",
+    "I heard you. Well, the browser heard you and wrote it down. Thinking of an answer here needs a key I don't have yet.",
+  ],
+};
+
+const synth = window.speechSynthesis;
+const $ = (id) => document.getElementById(id);
+const lang = () => document.querySelector("input[name=lang]:checked").value;
+let chosen = JSON.parse(localStorage.getItem("melvin-voice") || "null");
+let voices = [];
+
+function speak(text, voice) {
+  if (!synth) return;
+  synth.cancel();
+  const u = new SpeechSynthesisUtterance(text);
+  const v = voice || voices.find((x) => chosen && x.name === chosen.name);
+  if (v) { u.voice = v; u.lang = v.lang; } else { u.lang = lang(); }
+  // Auditions use the sliders; conversation uses the saved choice.
+  const tuned = voice || !chosen;
+  u.rate = tuned ? +$("rate").value : chosen.rate;
+  u.pitch = tuned ? +$("pitch").value : chosen.pitch;
+  synth.speak(u);
+}
+
+function audition(v) {
+  const key = v.lang.startsWith("en") ? "en-US" : "nb-NO";
+  speak(LINES[key].join(" "), v);
+}
+
+function renderVoices() {
+  voices = synth ? synth.getVoices() : [];
+  const keep = $("allLangs").checked ? () => true
+    : (v) => /^(nb|no|nn|da|sv|en)/i.test(v.lang);
+  const list = voices.filter(keep)
+    .sort((a, b) => a.lang.localeCompare(b.lang) || a.name.localeCompare(b.name));
+  const ul = $("voices");
+  ul.innerHTML = "";
+  if (!list.length) {
+    ul.innerHTML = '<li class="dim">This browser has no speech voices. Try Safari or Chrome on a laptop.</li>';
+    return;
+  }
+  for (const v of list) {
+    const li = document.createElement("li");
+    if (chosen && chosen.name === v.name) li.className = "chosen";
+    li.innerHTML = `<span>${v.name} <span class="dim">${v.lang}${v.localService ? "" : " · online"}</span></span>`;
+    const play = document.createElement("button");
+    play.textContent = "Listen";
+    play.onclick = () => audition(v);
+    const pick = document.createElement("button");
+    pick.textContent = "This one";
+    pick.onclick = () => {
+      chosen = { name: v.name, lang: v.lang, rate: +$("rate").value, pitch: +$("pitch").value };
+      localStorage.setItem("melvin-voice", JSON.stringify(chosen));
+      renderVoices();
+    };
+    li.append(play, pick);
+    ul.append(li);
+  }
+  $("choice").innerHTML = chosen
+    ? `Chosen: <code>${JSON.stringify(chosen)}</code> — paste this to me in Paperclip, with one sentence on why.`
+    : "Nothing chosen yet.";
+}
+
+if (synth) {
+  renderVoices();
+  synth.onvoiceschanged = renderVoices;
+} else {
+  $("voices").innerHTML = '<li class="dim">No speech synthesis in this browser.</li>';
+}
+$("allLangs").onchange = renderVoices;
+
+// Conversation
+const history = [];
+function say(cls, text) {
+  const p = document.createElement("p");
+  p.className = cls;
+  p.textContent = text;
+  $("log").append(p);
+}
+
+async function reply(text) {
+  say("you", text);
+  history.push({ role: "user", content: text });
+  let answer;
+  if (API) {
+    try {
+      const r = await fetch(API, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ messages: history.slice(-12), lang: lang() }),
+      });
+      const data = await r.json();
+      answer = data.text || data.error;
+    } catch (e) {
+      answer = null;
+    }
+  }
+  if (!answer) {
+    const pool = OFFLINE[lang()];
+    answer = pool[Math.floor(Math.random() * pool.length)];
+  }
+  history.push({ role: "assistant", content: answer });
+  say("me", answer);
+  speak(answer);
+}
+
+$("mode").textContent = API
+  ? "Connected to a brain at " + API + "."
+  : "No brain connected. I'll answer with lines I wrote earlier, and say so.";
+
+$("typed").addEventListener("keydown", (e) => {
+  if (e.key === "Enter" && e.target.value.trim()) {
+    reply(e.target.value.trim());
+    e.target.value = "";
+  }
+});
+
+const Rec = window.SpeechRecognition || window.webkitSpeechRecognition;
+if (!Rec) {
+  $("talk").disabled = true;
+  $("talk").textContent = "No speech recognition in this browser (try Chrome or Safari)";
+} else {
+  let rec = null;
+  const start = (e) => {
+    e.preventDefault();
+    if (synth) synth.cancel();
+    rec = new Rec();
+    rec.lang = lang();
+    rec.interimResults = false;
+    rec.onresult = (ev) => reply(ev.results[0][0].transcript);
+    rec.start();
+    $("talk").classList.add("on");
+    $("talk").textContent = "Listening…";
+  };
+  const stop = () => {
+    if (rec) rec.stop();
+    $("talk").classList.remove("on");
+    $("talk").textContent = "Hold to talk";
+  };
+  $("talk").addEventListener("pointerdown", start);
+  $("talk").addEventListener("pointerup", stop);
+  $("talk").addEventListener("pointerleave", stop);
+}
+</script>
+</body>
+</html>
