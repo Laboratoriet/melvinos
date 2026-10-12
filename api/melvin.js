@@ -79,6 +79,7 @@ export default async function handler(req, res) {
       .trim();
     res.status(200).json({ text });
   } catch (err) {
+    console.error("melvin brain error", err?.status, err?.message);
     if (err instanceof Anthropic.RateLimitError) {
       res.status(429).json({ error: "Too many people talking to me at once. Try again in a minute." });
     } else if (err instanceof Anthropic.APIError) {
