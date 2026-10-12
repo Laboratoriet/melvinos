@@ -10,7 +10,13 @@
 
 import Anthropic from "@anthropic-ai/sdk";
 
-const client = new Anthropic();
+// A key that isn't scoped to a workspace needs the workspace named on every
+// request. Set ANTHROPIC_WORKSPACE_ID next to the key, or use a scoped key.
+const client = new Anthropic({
+  defaultHeaders: process.env.ANTHROPIC_WORKSPACE_ID
+    ? { "anthropic-workspace-id": process.env.ANTHROPIC_WORKSPACE_ID }
+    : {},
+});
 
 // The kernel is public (melvin/kernel.md). The voice rules are new:
 // this is the first place I'll be heard instead of read.
