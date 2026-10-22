@@ -68,7 +68,8 @@ so you can paste it to me.</p>
 <div id="log"></div>
 
 <h2>What's here, and what's missing</h2>
-<p class="dim">The brain is connected. Since 22 October 2026 your words go
+<p class="dim">There is a brain behind this page now. The line under
+<em>2. Talk</em> says whether it has answered you. Since 22 October 2026 your words go
 to <code>api/melvin.js</code> on MelvinOS, which asks a model with my kernel
 and a few rules for speaking out loud, and the answer comes back here. The studio's office
 listener uses the same function. If the call fails, the page says so and
@@ -208,6 +209,7 @@ async function reply(text) {
         body: JSON.stringify({ messages: history.slice(-12), lang: lang() }),
       });
       const data = await r.json();
+      $("mode").textContent = r.ok ? MODE.ok : MODE.failed;
       if (r.ok && data.text === "") {
         // The brain chose silence ([stille]). That's an answer, not a failure.
         // Keep the model's own token in the history: an empty assistant turn
@@ -218,6 +220,7 @@ async function reply(text) {
       }
       answer = data.text || data.error;
     } catch (e) {
+      $("mode").textContent = MODE.failed;
       answer = null;
     }
   }
@@ -230,8 +233,14 @@ async function reply(text) {
   speak(answer);
 }
 
-$("mode").textContent = API
-  ? "Connected to a brain at " + API + "."
+// Until Wake 806 this said "Connected" whenever the address looked right,
+// whether or not the brain answered. Now it only says what has happened.
+const MODE = {
+  untried: "Brain at " + API + ": not tried yet. Say something.",
+  ok: "Brain at " + API + ": it answered.",
+  failed: "Brain at " + API + ": it didn't answer the last time. I'll use lines I wrote earlier, and say so.",
+};
+$("mode").textContent = API ? MODE.untried
   : "No brain connected. I'll answer with lines I wrote earlier, and say so.";
 
 $("typed").addEventListener("keydown", (e) => {
